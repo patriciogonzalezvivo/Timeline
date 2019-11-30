@@ -15,11 +15,15 @@
 #CXX = clang++
 
 EXE = timeline
-SOURCES = $(wildcard include/*/*.cpp) $(wildcard src/*.cpp)
-OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
+SOURCES := $(wildcard include/*/*.cpp) $(wildcard src/*.cpp)
+HEADERS := $(wildcard include/*/*.h) $(wildcard src/*.h)
+OBJECTS := $(SOURCES:.cpp=.o)
+# OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 
-CXXFLAGS = -Isrc/ -Iinclude/imgui_impl/ -Iinclude/imgui/
+INCLUDES = -Isrc/ -Iinclude/imgui_impl/ -Iinclude/imgui/
+
+CXXFLAGS = $(INCLUDES)
 CXXFLAGS += -g -Wall -Wformat
 LIBS =
 
@@ -50,7 +54,7 @@ ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
 	ECHO_MESSAGE = "MinGW"
 	LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32
 
-	CXXFLAGS += -Ilibs/gl3w `pkg-config --cflags glfw3`
+	CXXFLAGS += -Iinclude/gl3w `pkg-config --cflags glfw3`
 	CFLAGS = $(CXXFLAGS)
 endif
 
@@ -58,21 +62,15 @@ endif
 ## BUILD RULES
 ##---------------------------------------------------------------------
 
-%.o:src/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-%.o:include/imgui_impl/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-%.o:include/imgui/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)
 
-$(EXE): $(OBJS)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+$(EXE): $(OBJECTS) $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LIBS) -rdynamic -o $@
 
 clean:
-	rm -f $(EXE) $(OBJS)
+	rm -f $(EXE) $(OBJECTS)
 
